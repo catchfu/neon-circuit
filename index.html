@@ -1,0 +1,560 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Neon Circuit</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: Arial, sans-serif;
+            background: linear-gradient(135deg, #0a0e27 0%, #1a1a2e 100%);
+            color: #fff;
+            padding: 5px;
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .game-container {
+            width: 98%;
+            max-width: 900px;
+            background: rgba(26, 26, 46, 0.95);
+            border-radius: 15px;
+            padding: 10px;
+            overflow: visible;
+        }
+
+        h1 {
+            font-size: clamp(24px, 4vw, 36px);
+            color: #00ffff;
+            text-align: center;
+            text-shadow: 0 0 10px #00ffff;
+            margin: 5px 0;
+        }
+
+        .score {
+            text-align: center;
+            font-size: 18px;
+            color: #00ff88;
+            margin: 5px 0;
+        }
+
+        .game-area {
+            background: #0f0f1e;
+            border-radius: 10px;
+            padding: 10px;
+            margin: 10px 0;
+            border: 2px solid #00ffff;
+        }
+
+        #gameCanvas {
+            display: block;
+            margin: 0 auto;
+            background: #1a1a2e;
+            border-radius: 5px;
+            max-width: 100%;
+        }
+
+        .controls {
+            display: flex;
+            justify-content: center;
+            gap: 10px;
+            margin: 10px 0;
+            flex-wrap: wrap;
+        }
+
+        button {
+            padding: 12px 30px;
+            font-size: 16px;
+            background: linear-gradient(135deg, #00ffff 0%, #0088ff 100%);
+            border: none;
+            border-radius: 25px;
+            color: #fff;
+            cursor: pointer;
+            font-weight: bold;
+            transition: all 0.2s;
+            box-shadow: 0 3px 15px rgba(0, 255, 255, 0.4);
+        }
+
+        button:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 5px 20px rgba(0, 255, 255, 0.6);
+        }
+
+        button:active {
+            transform: translateY(0);
+            background: linear-gradient(135deg, #00ff88 0%, #00ffaa 100%);
+        }
+
+        button:disabled {
+            background: linear-gradient(135deg, #666 0%, #888 100%);
+            cursor: not-allowed;
+            opacity: 0.6;
+        }
+
+        .instructions {
+            background: rgba(0, 255, 255, 0.1);
+            padding: 10px;
+            border-radius: 8px;
+            border: 1px solid #00ffff;
+            margin: 10px 0;
+            font-size: 14px;
+        }
+
+        .instructions h3 {
+            color: #00ffff;
+            font-size: 16px;
+            margin-bottom: 5px;
+        }
+
+        .instructions p {
+            margin: 5px 0;
+            line-height: 1.4;
+        }
+
+        .level-info {
+            text-align: center;
+            margin: 10px 0;
+            font-size: 16px;
+        }
+
+        .level-info h3 {
+            color: #00ff88;
+            font-size: 20px;
+        }
+
+        .progress-bar {
+            width: 100%;
+            height: 20px;
+            background: #0a0a1a;
+            border-radius: 10px;
+            overflow: hidden;
+            border: 2px solid #00ff88;
+            margin: 5px 0;
+        }
+
+        #progress {
+            height: 100%;
+            background: linear-gradient(90deg, #00ff88 0%, #00ffff 100%);
+            transition: width 0.3s ease;
+            width: 0%;
+        }
+
+        .game-over {
+            position: fixed;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            background: rgba(26, 26, 46, 0.98);
+            padding: 30px;
+            border-radius: 15px;
+            text-align: center;
+            border: 3px solid #ff0088;
+            z-index: 1000;
+            width: 90%;
+            max-width: 400px;
+        }
+
+        .game-over h2 {
+            font-size: 32px;
+            color: #ff0088;
+            margin-bottom: 15px;
+        }
+
+        #finalScore {
+            font-size: 24px;
+            color: #00ffff;
+            font-weight: bold;
+        }
+
+        @media (max-width: 600px) {
+            .game-container {
+                padding: 8px;
+            }
+
+            button {
+                font-size: 14px;
+                padding: 10px 20px;
+            }
+
+            .instructions {
+                font-size: 12px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="game-container">
+        <h1>⚡ NEON CIRCUIT ⚡</h1>
+        <div class="score">Score: <span id="score">0</span></div>
+
+        <div class="game-area">
+            <canvas id="gameCanvas"></canvas>
+        </div>
+
+        <div class="controls">
+            <button id="startBtn">▶️ START GAME</button>
+            <button id="resetBtn">🔄 RESET</button>
+        </div>
+
+        <div class="instructions">
+            <h3>How to Play:</h3>
+            <p>🎮 Click "Start Game" then draw paths on the canvas</p>
+            <p>⚡ Connect the green power source to the pink target</p>
+            <p>🔋 Complete circuits before time runs out!</p>
+        </div>
+
+        <div class="level-info">
+            <h3>Level <span id="levelNum">1</span></h3>
+            <div class="progress-bar">
+                <div id="progress"></div>
+            </div>
+            <p>Completed: <span id="completed">0</span>/<span id="target">5</span></p>
+        </div>
+    </div>
+
+    <div class="game-over" id="gameOver" style="display: none;">
+        <h2>GAME OVER</h2>
+        <p>Final Score: <span id="finalScore">0</span></p>
+        <button id="restartBtn">🔁 Play Again</button>
+    </div>
+
+    <script>
+        class NeonCircuit {
+            constructor() {
+                this.canvas = document.getElementById('gameCanvas');
+                this.ctx = this.canvas.getContext('2d');
+                this.score = 0;
+                this.level = 1;
+                this.circuitsCompleted = 0;
+                this.targetCircuits = 5;
+                this.timeLeft = 30;
+                this.gameActive = false;
+                this.circuits = [];
+                this.lightningPaths = [];
+                this.isDrawing = false;
+                this.currentPath = [];
+                this.lastTime = 0;
+
+                this.setupCanvas();
+                this.setupEventListeners();
+                this.setupResponsivePositions();
+                this.gameLoop(0);
+            }
+
+            setupCanvas() {
+                const containerWidth = Math.min(800, window.innerWidth - 80);
+                const aspectRatio = 1000 / 600;
+                const width = containerWidth;
+                const height = width / aspectRatio;
+
+                this.canvas.width = Math.max(400, width);
+                this.canvas.height = Math.max(300, height);
+            }
+
+            setupResponsivePositions() {
+                const margin = this.canvas.width * 0.1;
+                const boxSize = Math.min(50, this.canvas.width * 0.06);
+                const centerY = this.canvas.height / 2;
+
+                this.powerSource = {
+                    x: margin,
+                    y: centerY - boxSize / 2,
+                    width: boxSize,
+                    height: boxSize
+                };
+
+                this.target = {
+                    x: this.canvas.width - margin - boxSize,
+                    y: centerY - boxSize / 2,
+                    width: boxSize,
+                    height: boxSize
+                };
+            }
+
+            setupEventListeners() {
+                this.canvas.addEventListener('mousedown', (e) => this.startDrawing(e));
+                this.canvas.addEventListener('mousemove', (e) => this.draw(e));
+                this.canvas.addEventListener('mouseup', (e) => this.stopDrawing(e));
+
+                this.canvas.addEventListener('touchstart', (e) => {
+                    e.preventDefault();
+                    this.startDrawing(e.touches[0]);
+                });
+                this.canvas.addEventListener('touchmove', (e) => {
+                    e.preventDefault();
+                    this.draw(e.touches[0]);
+                });
+                this.canvas.addEventListener('touchend', (e) => {
+                    e.preventDefault();
+                    this.stopDrawing(e.changedTouches[0]);
+                });
+
+                document.getElementById('startBtn').addEventListener('click', () => this.startGame());
+                document.getElementById('resetBtn').addEventListener('click', () => this.resetGame());
+                document.getElementById('restartBtn').addEventListener('click', () => this.restart());
+
+                window.addEventListener('resize', () => {
+                    this.setupCanvas();
+                    this.setupResponsivePositions();
+                });
+            }
+
+            startDrawing(e) {
+                if (!this.gameActive) return;
+                this.isDrawing = true;
+                this.currentPath = [];
+                const rect = this.canvas.getBoundingClientRect();
+                const x = e.clientX - rect.left;
+                const y = e.clientY - rect.top;
+                this.currentPath.push({ x, y });
+            }
+
+            draw(e) {
+                if (!this.isDrawing || !this.gameActive) return;
+                const rect = this.canvas.getBoundingClientRect();
+                const x = e.clientX - rect.left;
+                const y = e.clientY - rect.top;
+                this.currentPath.push({ x, y });
+
+                if (this.currentPath.length > 1) {
+                    const lastPoint = this.currentPath[this.currentPath.length - 2];
+                    const newPoint = this.currentPath[this.currentPath.length - 1];
+                    this.lightningPaths.push({
+                        startX: lastPoint.x,
+                        startY: lastPoint.y,
+                        endX: newPoint.x,
+                        endY: newPoint.y,
+                        life: 1.0,
+                        decay: 0.02
+                    });
+                }
+            }
+
+            stopDrawing(e) {
+                if (!this.isDrawing) return;
+                this.isDrawing = false;
+                if (this.currentPath.length > 5) {
+                    this.circuits.push([...this.currentPath]);
+                    this.checkCircuitCompletion();
+                }
+                this.currentPath = [];
+            }
+
+            checkCircuitCompletion() {
+                const lastPath = this.circuits[this.circuits.length - 1];
+                if (!lastPath || lastPath.length < 2) return;
+
+                const threshold = Math.max(50, this.canvas.width * 0.05);
+                const startConnected = this.isNear(this.powerSource, lastPath[0], threshold);
+                const endConnected = this.isNear(this.target, lastPath[lastPath.length - 1], threshold);
+
+                if (startConnected && endConnected) {
+                    this.completeCircuit();
+                }
+            }
+
+            isNear(obj, point, threshold) {
+                const dx = (obj.x + obj.width / 2) - point.x;
+                const dy = (obj.y + obj.height / 2) - point.y;
+                const distance = Math.sqrt(dx * dx + dy * dy);
+                return distance < threshold;
+            }
+
+            completeCircuit() {
+                this.circuitsCompleted++;
+                this.score += Math.floor(this.timeLeft * 10);
+                this.updateUI();
+
+                for (let i = 0; i < 50; i++) {
+                    this.lightningPaths.push({
+                        startX: this.target.x + this.target.width / 2,
+                        startY: this.target.y + this.target.height / 2,
+                        endX: this.target.x + this.target.width / 2 + (Math.random() - 0.5) * 200,
+                        endY: this.target.y + this.target.height / 2 + (Math.random() - 0.5) * 200,
+                        life: 1.0,
+                        decay: 0.03,
+                        special: true
+                    });
+                }
+
+                setTimeout(() => {
+                    this.circuits = [];
+                }, 1000);
+
+                if (this.circuitsCompleted >= this.targetCircuits) {
+                    this.nextLevel();
+                }
+            }
+
+            nextLevel() {
+                this.level++;
+                this.circuitsCompleted = 0;
+                this.targetCircuits = 5 + Math.floor(this.level * 1.5);
+                this.timeLeft = Math.max(15, 30 - (this.level * 2));
+                this.circuits = [];
+                this.updateUI();
+
+                for (let i = 0; i < 100; i++) {
+                    this.lightningPaths.push({
+                        startX: this.canvas.width / 2,
+                        startY: this.canvas.height / 2,
+                        endX: this.canvas.width / 2 + (Math.random() - 0.5) * this.canvas.width,
+                        endY: this.canvas.height / 2 + (Math.random() - 0.5) * this.canvas.height,
+                        life: 1.5,
+                        decay: 0.01,
+                        special: true
+                    });
+                }
+            }
+
+            startGame() {
+                this.gameActive = true;
+                this.score = 0;
+                this.level = 1;
+                this.circuitsCompleted = 0;
+                this.targetCircuits = 5;
+                this.timeLeft = 30;
+                this.circuits = [];
+                this.lightningPaths = [];
+                document.getElementById('startBtn').disabled = true;
+                this.updateUI();
+                this.startTimer();
+            }
+
+            resetGame() {
+                this.gameActive = false;
+                document.getElementById('startBtn').disabled = false;
+                this.score = 0;
+                this.level = 1;
+                this.circuitsCompleted = 0;
+                this.targetCircuits = 5;
+                this.timeLeft = 30;
+                this.circuits = [];
+                this.lightningPaths = [];
+                this.updateUI();
+            }
+
+            restart() {
+                document.getElementById('gameOver').style.display = 'none';
+                this.startGame();
+            }
+
+            startTimer() {
+                const timer = setInterval(() => {
+                    if (!this.gameActive) {
+                        clearInterval(timer);
+                        return;
+                    }
+                    this.timeLeft--;
+                    this.updateUI();
+                    if (this.timeLeft <= 0) {
+                        this.gameOver();
+                        clearInterval(timer);
+                    }
+                }, 1000);
+            }
+
+            gameOver() {
+                this.gameActive = false;
+                document.getElementById('startBtn').disabled = false;
+                document.getElementById('finalScore').textContent = this.score;
+                document.getElementById('gameOver').style.display = 'block';
+            }
+
+            updateUI() {
+                document.getElementById('score').textContent = this.score;
+                document.getElementById('levelNum').textContent = this.level;
+                document.getElementById('completed').textContent = this.circuitsCompleted;
+                document.getElementById('target').textContent = this.targetCircuits;
+                const progress = (this.circuitsCompleted / this.targetCircuits) * 100;
+                document.getElementById('progress').style.width = progress + '%';
+            }
+
+            render() {
+                this.ctx.fillStyle = '#1a1a2e';
+                this.ctx.fillRect(0, 0, this.canvas.width, this.canvas.height);
+
+                this.ctx.fillStyle = '#00ff88';
+                this.ctx.fillRect(this.powerSource.x, this.powerSource.y, this.powerSource.width, this.powerSource.height);
+                this.ctx.fillStyle = '#fff';
+                this.ctx.font = '20px Arial';
+                this.ctx.fillText('⚡', this.powerSource.x + 10, this.powerSource.y + 30);
+
+                this.ctx.fillStyle = '#ff0088';
+                this.ctx.fillRect(this.target.x, this.target.y, this.target.width, this.target.height);
+                this.ctx.fillStyle = '#fff';
+                this.ctx.fillText('🎯', this.target.x + 10, this.target.y + 30);
+
+                this.ctx.strokeStyle = '#00ffff';
+                this.ctx.lineWidth = 3;
+                this.ctx.shadowBlur = 10;
+                this.ctx.shadowColor = '#00ffff';
+
+                this.circuits.forEach(path => {
+                    if (path.length > 1) {
+                        this.ctx.beginPath();
+                        this.ctx.moveTo(path[0].x, path[0].y);
+                        for (let i = 1; i < path.length; i++) {
+                            this.ctx.lineTo(path[i].x, path[i].y);
+                        }
+                        this.ctx.stroke();
+                    }
+                });
+
+                if (this.currentPath.length > 1) {
+                    this.ctx.strokeStyle = '#0088ff';
+                    this.ctx.beginPath();
+                    this.ctx.moveTo(this.currentPath[0].x, this.currentPath[0].y);
+                    for (let i = 1; i < this.currentPath.length; i++) {
+                        this.ctx.lineTo(this.currentPath[i].x, this.currentPath[i].y);
+                    }
+                    this.ctx.stroke();
+                }
+
+                this.lightningPaths.forEach((lightning, index) => {
+                    const alpha = lightning.life;
+                    this.ctx.strokeStyle = lightning.special ?
+                        `rgba(255, 0, 136, ${alpha})` :
+                        `rgba(0, 255, 255, ${alpha})`;
+                    this.ctx.lineWidth = 2;
+                    this.ctx.shadowBlur = 15;
+                    this.ctx.shadowColor = this.ctx.strokeStyle;
+
+                    const endX = lightning.endX + (Math.random() - 0.5) * 10;
+                    const endY = lightning.endY + (Math.random() - 0.5) * 10;
+
+                    this.ctx.beginPath();
+                    this.ctx.moveTo(lightning.startX, lightning.startY);
+                    this.ctx.lineTo(endX, endY);
+                    this.ctx.stroke();
+
+                    lightning.life -= lightning.decay;
+                    if (lightning.life <= 0) {
+                        this.lightningPaths.splice(index, 1);
+                    }
+                });
+
+                this.ctx.shadowBlur = 0;
+            }
+
+            gameLoop(currentTime) {
+                this.render();
+                requestAnimationFrame((time) => this.gameLoop(time));
+            }
+        }
+
+        window.addEventListener('load', () => {
+            new NeonCircuit();
+        });
+    </script>
+</body>
+</html>
